@@ -25,6 +25,25 @@ Requires Python 3 with numpy.
 
 ---
 
+## Installation
+
+Clone the repository and link the two scripts into `~/bin` (which must be on
+the shell's search path), so they can be run from any directory:
+
+    git clone https://github.com/LucianoRistori/PlankFiducials.git ~/code/CMM/PlankFiducials
+    chmod +x ~/code/CMM/PlankFiducials/fiducial_fit.py ~/code/CMM/PlankFiducials/make_nominal_table.py
+    ln -s ~/code/CMM/PlankFiducials/fiducial_fit.py ~/bin/fiducial_fit
+    ln -s ~/code/CMM/PlankFiducials/make_nominal_table.py ~/bin/make_nominal_table
+
+The links point to the files in the repository, so any change (or `git pull`)
+takes effect immediately; nothing needs to be reinstalled. Check with
+`which fiducial_fit`. If numpy is missing: `pip3 install numpy`.
+
+Once installed, the commands below can be called without `python3` and without
+the `.py` extension, e.g. `fiducial_fit NOMINAL_TABLE MEASUREMENT_FILE`.
+
+---
+
 ## make_nominal_table.py
 
     python3 make_nominal_table.py RAW_SENSOR_FILE [OUTPUT_FILE] [--cut UM]
