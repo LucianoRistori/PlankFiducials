@@ -117,11 +117,12 @@ What it does:
 3. **Results:** circle positions and module poses (centre, rotation about Z,
    tilts about X and Y) in the mean system.
 
-Output, written to the current directory:
-
-- `<measurement>_report.txt` - full report
-- `<measurement>_circles_global.txt` - circle positions (`Label, X, Y, Z`) in the
-  mean system, labels LL1, LR1, ... for the circles of each module
+Output: the report is printed and written to the current directory as
+`<measurement>_report.txt`. An existing report is never overwritten: a second
+analysis of the same file gives `<measurement>_report_2.txt`, then `_3`, and so on.
+The report header records the analysis date and time, the code version (git
+commit, with a warning if the code had uncommitted changes), the nominal table
+used and the quality cut, so different reports of the same input can be compared.
 
 `example_L1Bot.txt` is a sample 4-module measurement (bottom side) including
 template header lines.

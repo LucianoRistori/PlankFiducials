@@ -22,8 +22,11 @@ Step 2: global "mean" system: Z normal to the best-fit plane through all circles
         of all modules, X along the average local x axis of the modules,
         origin at ORG (if present) or at the circle centroid.
 Step 3: transform circles and module poses to the mean system.
+
+Output: the report is printed and written to <measurement>_report.txt in the
+current directory; an existing report is never overwritten (_report_2.txt, ...).
 """
-import sys, os, itertools, re
+import sys, os, itertools, re, subprocess, datetime
 import numpy as np
 
 GROUPS = {'LL': 16, 'LR': 18, 'UR': 18, 'UL': 16}
@@ -111,6 +114,8 @@ def main():
 
     out = []
     pr = out.append
+    pr(f"Analysis date : {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    pr(f"Code version  : fiducial_fit {code_version()}")
     pr(f"Nominal table : {args[0]}  (from {source})")
     pr(f"Measurement   : {args[1]}")
     pr(f"Quality cut   : XY fit RMS < {maxrms*1000:.1f} um\n")
@@ -181,18 +186,35 @@ def main():
            f"  {rotz*1000:7.3f}  {tiltx*1000:7.3f}  {tilty*1000:7.3f}")
     pr("\n   Circle positions:")
     pr("   module  circle         X          Y          Z")
-    rows = []
     for m in mods:
         for k in CIRCLES:
             p = M[m]['g'][k]
             pr(f"   {m:6s}  {k:9s} {p[0]:10.4f} {p[1]:10.4f} {p[2]:9.4f}")
-            rows.append(f"{k[:2]}{m}, {p[0]:10.4f}, {p[1]:10.4f}, {p[2]:9.4f}")
 
     text = "\n".join(out) + "\n"
     print(text)
-    base = args[1].rsplit('/', 1)[-1].rsplit('.', 1)[0]
-    open(base + '_report.txt', 'w').write(text)
-    open(base + '_circles_global.txt', 'w').write("\n".join(rows) + "\n")
+    # never overwrite: <measurement>_report.txt, then _report_2.txt, _report_3.txt, ...
+    base = os.path.splitext(os.path.basename(args[1]))[0] + '_report'
+    name, n = base + '.txt', 1
+    while os.path.exists(name):
+        n += 1; name = f"{base}_{n}.txt"
+    open(name, 'w').write(text)
+    print(f"Report written to {name}")
+
+
+def code_version():
+    """git commit of this script's repository, with a warning for local changes."""
+    d = os.path.dirname(os.path.realpath(__file__))
+    try:
+        h = subprocess.run(['git', '-C', d, 'rev-parse', '--short', 'HEAD'],
+                           capture_output=True, text=True, timeout=5).stdout.strip()
+        dirty = subprocess.run(['git', '-C', d, 'status', '--porcelain', '--untracked-files=no'],
+                               capture_output=True, text=True, timeout=5).stdout.strip()
+    except Exception:
+        return 'unknown (git not available)'
+    if not h:
+        return 'unknown (not a git repository)'
+    return h + ('  (WARNING: uncommitted changes in the code)' if dirty else '')
 
 
 if __name__ == '__main__':
