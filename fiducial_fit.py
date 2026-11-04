@@ -105,7 +105,12 @@ def main():
                  "Give it with --nominal FILE or set PLANK_NOMINAL.")
     nom = read_table(nominal)
     meas = read_table(args[0])
-    args = [nominal, args[0]]
+    args = [nominal, os.path.abspath(args[0])]
+    # report file, never overwritten: <measurement>_report.txt, _report_2.txt, ...
+    base = os.path.abspath(os.path.splitext(os.path.basename(args[1]))[0] + '_report')
+    name, n = base + '.txt', 1
+    while os.path.exists(name):
+        n += 1; name = f"{base}_{n}.txt"
     org = meas.pop('ORG', None)
     # keep only fiducial points LL<m>, LR<m>, UR<m>, UL<m>; ignore anything else
     # (e.g. circle lines from the ZONE3 circle block)
@@ -118,6 +123,7 @@ def main():
     pr(f"Code version  : fiducial_fit {code_version()}")
     pr(f"Nominal table : {args[0]}  (from {source})")
     pr(f"Measurement   : {args[1]}")
+    pr(f"Report file   : {name}")
     pr(f"Quality cut   : XY fit RMS < {maxrms*1000:.1f} um\n")
 
     # ---------------- Step 1 ----------------
@@ -193,11 +199,6 @@ def main():
 
     text = "\n".join(out) + "\n"
     print(text)
-    # never overwrite: <measurement>_report.txt, then _report_2.txt, _report_3.txt, ...
-    base = os.path.splitext(os.path.basename(args[1]))[0] + '_report'
-    name, n = base + '.txt', 1
-    while os.path.exists(name):
-        n += 1; name = f"{base}_{n}.txt"
     open(name, 'w').write(text)
     print(f"Report written to {name}")
 

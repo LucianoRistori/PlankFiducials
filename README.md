@@ -121,8 +121,9 @@ Output: the report is printed and written to the current directory as
 `<measurement>_report.txt`. An existing report is never overwritten: a second
 analysis of the same file gives `<measurement>_report_2.txt`, then `_3`, and so on.
 The report header records the analysis date and time, the code version (git
-commit, with a warning if the code had uncommitted changes), the nominal table
-used and the quality cut, so different reports of the same input can be compared.
+commit, with a warning if the code had uncommitted changes), the full paths of
+the nominal table, the measurement file and the report file itself, and the
+quality cut, so different reports of the same input can be compared.
 
 `example_L1Bot.txt` is a sample 4-module measurement (bottom side) including
 template header lines.
