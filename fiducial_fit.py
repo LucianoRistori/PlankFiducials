@@ -2,13 +2,17 @@
 """
 fiducial_fit.py - module and circle positions on a populated plank.
 
-Usage:  python3 fiducial_fit.py NOMINAL_TABLE MEASUREMENT_FILE [--maxrms UM]
+Usage:  fiducial_fit.py MEASUREMENT_FILE [--nominal FILE] [--maxrms UM]
 
-NOMINAL_TABLE    : Label, X, Y, Z  (sensor frame, e.g. PSFiducials_nominal.txt)
 MEASUREMENT_FILE : Label, X, Y, Z  with labels LL<m>, LR<m>, UR<m>, UL<m> for module m.
+                   Header and other non-fiducial lines are ignored.
                    An optional point labelled ORG (normally first line) defines the
                    XYZ origin of the global system; otherwise the centroid of the
                    circles of all modules is used.
+Nominal table    : Label, X, Y, Z (sensor frame), found in this order:
+                   1. --nominal FILE
+                   2. environment variable PLANK_NOMINAL
+                   3. built-in default DEFAULT_NOMINAL (below)
 
 Step 1: for each module, identify which fiducial was actually measured in each
         group (LL 1-16, LR/UR 1-18, UL 1-16) by a 2D rigid fit over all label
@@ -19,11 +23,13 @@ Step 2: global "mean" system: Z normal to the best-fit plane through all circles
         origin at ORG (if present) or at the circle centroid.
 Step 3: transform circles and module poses to the mean system.
 """
-import sys, itertools, re
+import sys, os, itertools, re
 import numpy as np
 
 GROUPS = {'LL': 16, 'LR': 18, 'UR': 18, 'UL': 16}
 CIRCLES = ['LLcircle', 'LRcircle', 'URcircle', 'ULcircle']
+DEFAULT_NOMINAL = ('~/Dropbox/Documents/CMS/CMM_Work/Planks/PopulatedPlanks/'
+                   'PS_Fiducials/PSFiducials_nominal.txt')
 
 
 def read_table(path):
@@ -79,8 +85,24 @@ def main():
     maxrms = 0.030
     if '--maxrms' in args:
         i = args.index('--maxrms'); maxrms = float(args[i + 1]) / 1000; del args[i:i + 2]
-    nom = read_table(args[0])
-    meas = read_table(args[1])
+    nominal = None
+    if '--nominal' in args:
+        i = args.index('--nominal'); nominal = args[i + 1]; del args[i:i + 2]
+    if len(args) != 1:
+        sys.exit("usage: fiducial_fit MEASUREMENT_FILE [--nominal FILE] [--maxrms UM]")
+    if nominal:
+        source = '--nominal'
+    elif os.environ.get('PLANK_NOMINAL'):
+        nominal, source = os.environ['PLANK_NOMINAL'], 'PLANK_NOMINAL'
+    else:
+        nominal, source = DEFAULT_NOMINAL, 'built-in default'
+    nominal = os.path.expanduser(nominal)
+    if not os.path.isfile(nominal):
+        sys.exit(f"Nominal table not found: {nominal}  (from {source})\n"
+                 "Give it with --nominal FILE or set PLANK_NOMINAL.")
+    nom = read_table(nominal)
+    meas = read_table(args[0])
+    args = [nominal, args[0]]
     org = meas.pop('ORG', None)
     # keep only fiducial points LL<m>, LR<m>, UR<m>, UL<m>; ignore anything else
     # (e.g. circle lines from the ZONE3 circle block)
@@ -89,7 +111,7 @@ def main():
 
     out = []
     pr = out.append
-    pr(f"Nominal table : {args[0]}")
+    pr(f"Nominal table : {args[0]}  (from {source})")
     pr(f"Measurement   : {args[1]}")
     pr(f"Quality cut   : XY fit RMS < {maxrms*1000:.1f} um\n")
 

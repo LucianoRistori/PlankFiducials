@@ -40,7 +40,7 @@ takes effect immediately; nothing needs to be reinstalled. Check with
 `which fiducial_fit`. If numpy is missing: `pip3 install numpy`.
 
 Once installed, the commands below can be called without `python3` and without
-the `.py` extension, e.g. `fiducial_fit NOMINAL_TABLE MEASUREMENT_FILE`.
+the `.py` extension, e.g. `fiducial_fit MEASUREMENT_FILE`.
 
 ---
 
@@ -71,7 +71,32 @@ Output: `Label, X, Y, Z` per line (default name `PSFiducials_nominal.txt`).
 
 ## fiducial_fit.py
 
-    python3 fiducial_fit.py NOMINAL_TABLE MEASUREMENT_FILE [--maxrms UM]
+    fiducial_fit MEASUREMENT_FILE [--nominal FILE] [--maxrms UM]
+
+Example, from any directory:
+
+    fiducial_fit Layer1TopFiducials_20261028163846.txt
+
+### Which nominal table is used
+
+The nominal table is not given on the command line in normal use. The program
+looks for it in this order and uses the first one that applies:
+
+1. `--nominal FILE` on the command line, if given (for an occasional
+   different table).
+2. The environment variable `PLANK_NOMINAL`, if it is set, e.g. in
+   `~/.bash_profile`:
+
+        export PLANK_NOMINAL=~/Dropbox/Documents/CMS/CMM_Work/Planks/PopulatedPlanks/PS_Fiducials/PSFiducials_nominal.txt
+
+3. The built-in default (constant `DEFAULT_NOMINAL` in `fiducial_fit.py`):
+   `~/Dropbox/Documents/CMS/CMM_Work/Planks/PopulatedPlanks/PS_Fiducials/PSFiducials_nominal.txt`
+
+The first line of every report states which table was used and where it came
+from (`--nominal`, `PLANK_NOMINAL` or `built-in default`). If the file does not
+exist, the program stops with an error saying which path it tried.
+
+### Input and options
 
 Input: a ZONE3 fiducial file with lines `Name,X,Y,Z`, names LL1, LR1, UR1, UL1,
 LL2, ... (corner + module number). Header text and non-fiducial lines (for
