@@ -104,6 +104,12 @@ def main():
     if not os.path.isfile(nominal):
         sys.exit(f"Nominal table not found: {nominal}  (from {source})\n"
                  "Give it with --nominal FILE or set PLANK_NOMINAL.")
+    mfile = args[0]
+    if not os.path.isfile(mfile) and os.path.isfile(mfile + '.txt'):
+        mfile += '.txt'                     # allow the name without .txt
+    if not os.path.isfile(mfile):
+        sys.exit(f"Measurement file not found: {os.path.abspath(args[0])}")
+    args[0] = mfile
     nom = read_table(nominal)
     meas = read_table(args[0])
     args = [nominal, os.path.abspath(args[0])]

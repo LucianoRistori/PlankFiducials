@@ -98,6 +98,8 @@ exist, the program stops with an error saying which path it tried.
 
 ### Input and options
 
+The `.txt` extension of the measurement file may be omitted.
+
 Input: a ZONE3 fiducial file with lines `Name,X,Y,Z`, names LL1, LR1, UR1, UL1,
 LL2, ... (corner + module number). Header text and non-fiducial lines (for
 example circles) are ignored. An optional point named `ORG` defines the origin
