@@ -125,7 +125,8 @@ What it does:
    the report gives these translations, the step between consecutive modules,
    the reference rectangle (average of the shifted circles of all modules) and,
    for every circle, the residual (dX, dY, dZ) from the reference, with RMS
-   values per module and for the whole plank. On a perfect plank all these
+   values per module and for the whole plank, and a summary table with the
+   MIN, MAX and RMS of dX, dY and dZ over all circles. On a perfect plank all these
    residuals are zero, so they are the raw material for figures of merit.
 
 Output: the report is printed and written to the current directory as

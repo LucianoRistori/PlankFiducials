@@ -244,6 +244,12 @@ def main():
     pr(f"   all     RMS       {np.sqrt((allr[:,0]**2).mean()):8.1f} {np.sqrt((allr[:,1]**2).mean()):8.1f}"
        f" {np.sqrt((allr[:,2]**2).mean()):8.1f}")
 
+    pr(f"\n   SUMMARY - residuals of all {len(allr)} circles after the X translation (um)")
+    pr("                 MIN       MAX       RMS")
+    for j, lab in enumerate(('dX', 'dY', 'dZ')):
+        v = allr[:, j]
+        pr(f"   {lab}      {v.min():9.1f} {v.max():9.1f} {np.sqrt((v**2).mean()):9.1f}")
+
     text = "\n".join(out) + "\n"
     print(text)
     open(name, 'w').write(text)
