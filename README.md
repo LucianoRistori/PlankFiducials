@@ -100,6 +100,14 @@ exist, the program stops with an error saying which path it tried.
 
 The `.txt` extension of the measurement file may be omitted.
 
+A module with a missing corner fiducial (one of LL, LR, UR, UL absent from the
+file) is **skipped**: a warning is printed, the report lists it under
+"SKIPPED" with the missing points, and the analysis goes on with the other
+modules. A skipped module takes no part in the global reference system or in
+the superposition. In step 4, a step between two modules that are not
+consecutive (because a module in between was skipped) is marked as such, since
+it spans two module spacings.
+
 Input: a ZONE3 fiducial file with lines `Name,X,Y,Z`, names LL1, LR1, UR1, UL1,
 LL2, ... (corner + module number). Header text and non-fiducial lines (for
 example circles) are ignored. An optional point named `ORG` defines the origin

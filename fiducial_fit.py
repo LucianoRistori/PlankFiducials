@@ -124,7 +124,15 @@ def main():
     # keep only fiducial points LL<m>, LR<m>, UR<m>, UL<m>; ignore anything else
     # (e.g. circle lines from the ZONE3 circle block)
     meas = {k: v for k, v in meas.items() if re.fullmatch(r'(LL|LR|UR|UL)\d+', k)}
-    mods = sorted({k[2:] for k in meas}, key=lambda s: (len(s), s))
+    allmods = sorted({k[2:] for k in meas}, key=lambda s: (len(s), s))
+    # a module with a missing corner fiducial is skipped (clear message, analysis goes on)
+    skipped = {m: [g + m for g in GROUPS if g + m not in meas] for m in allmods}
+    skipped = {m: miss for m, miss in skipped.items() if miss}
+    mods = [m for m in allmods if m not in skipped]
+    for m, miss in skipped.items():
+        print(f"WARNING: module {m} skipped - missing {', '.join(miss)}", file=sys.stderr)
+    if not mods:
+        sys.exit("No module has all 4 fiducials (LL, LR, UR, UL): nothing to analyse.")
 
     out = []
     pr = out.append
@@ -133,7 +141,10 @@ def main():
     pr(f"Nominal table : {args[0]}  (from {source})")
     pr(f"Measurement   : {args[1]}")
     pr(f"Report file   : {name}")
-    pr(f"Quality cut   : XY fit RMS < {maxrms*1000:.1f} um\n")
+    pr(f"Quality cut   : XY fit RMS < {maxrms*1000:.1f} um")
+    pr(f"Modules       : {', '.join(mods)} analysed"
+       + (f";  SKIPPED: " + '; '.join(f"{m} (missing {', '.join(v)})" for m, v in skipped.items())
+          if skipped else '') + "\n")
 
     # ---------------- Step 1 ----------------
     pr("STEP 1 - per-module fits (measurement coordinates, mm)")
@@ -219,10 +230,15 @@ def main():
     ref = {k: np.mean([M[m]['g'][k] - [shift[m], 0, 0] for m in mods], 0) for k in CIRCLES}
     pr("\nSTEP 4 - superposition of the modules by X translations (mm, residuals um)")
     pr("   X translation of each module = mean X of its 4 circles")
-    pr("   module  status   X translation   step from previous")
+    pr("   module  status   X translation   step from previous module")
     prev = None
     for m in mods:
-        step = '' if prev is None else f"{shift[m] - shift[prev]:14.4f}"
+        if prev is None:
+            step = ''
+        else:
+            step = f"{shift[m] - shift[prev]:14.4f}   (from module {prev})"
+            if int(m) - int(prev) != 1:
+                step += "  <- spans a skipped/missing module"
         pr(f"   {m:6s}  {'OK  ' if M[m]['good'] else 'FLAG'}  {shift[m]:12.4f}   {step}")
         prev = m
     pr("\n   Reference rectangle (average of the shifted circles of all modules):")
