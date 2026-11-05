@@ -119,6 +119,14 @@ What it does:
    See "The global reference system" below for the definition and the reasons.
 3. **Results:** circle positions and module poses (centre, rotation about Z,
    tilts about X and Y) in the mean system.
+4. **Superposition by X translations:** each module is shifted along X only,
+   so that the circles of all modules match as well as possible (least
+   squares). The best shift of a module is simply the mean X of its 4 circles;
+   the report gives these translations, the step between consecutive modules,
+   the reference rectangle (average of the shifted circles of all modules) and,
+   for every circle, the residual (dX, dY, dZ) from the reference, with RMS
+   values per module and for the whole plank. On a perfect plank all these
+   residuals are zero, so they are the raw material for figures of merit.
 
 Output: the report is printed and written to the current directory as
 `<measurement>_report.txt`. An existing report is never overwritten: a second

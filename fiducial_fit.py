@@ -23,6 +23,8 @@ Step 2: global "mean" system: its axes are the mean orientation of the modules
         orthogonal); origin at ORG (if present) or at the centroid of the
         circles. See README, "The global reference system", for the reasons.
 Step 3: transform circles and module poses to the mean system.
+Step 4: superimpose the modules by X translations only (best match in the
+        least-squares sense) and report the translations and the residuals.
 
 Output: the report is printed and written to <measurement>_report.txt in the
 current directory; an existing report is never overwritten (_report_2.txt, ...).
@@ -207,6 +209,40 @@ def main():
         for k in CIRCLES:
             p = M[m]['g'][k]
             pr(f"   {m:6s}  {k:9s} {p[0]:10.4f} {p[1]:10.4f} {p[2]:9.4f}")
+
+    # ---------------- Step 4 ----------------
+    # Superimpose the modules by X translations only. Least squares over all
+    # circles: the best shift of a module is the mean X of its 4 circles
+    # (defined up to a common constant, fixed by this choice). The reference
+    # rectangle is the average of the shifted circles of all modules.
+    shift = {m: np.mean([M[m]['g'][k][0] for k in CIRCLES]) for m in mods}
+    ref = {k: np.mean([M[m]['g'][k] - [shift[m], 0, 0] for m in mods], 0) for k in CIRCLES}
+    pr("\nSTEP 4 - superposition of the modules by X translations (mm, residuals um)")
+    pr("   X translation of each module = mean X of its 4 circles")
+    pr("   module  status   X translation   step from previous")
+    prev = None
+    for m in mods:
+        step = '' if prev is None else f"{shift[m] - shift[prev]:14.4f}"
+        pr(f"   {m:6s}  {'OK  ' if M[m]['good'] else 'FLAG'}  {shift[m]:12.4f}   {step}")
+        prev = m
+    pr("\n   Reference rectangle (average of the shifted circles of all modules):")
+    for k in CIRCLES:
+        p = ref[k]; pr(f"   {k:9s} {p[0]:10.4f} {p[1]:10.4f} {p[2]:9.4f}")
+    pr("\n   Residuals after the X translation (shifted circle - reference), um:")
+    pr("   module  circle        dX       dY       dZ")
+    allr = []
+    for m in mods:
+        rr = []
+        for k in CIRCLES:
+            d = (M[m]['g'][k] - [shift[m], 0, 0] - ref[k]) * 1000
+            rr.append(d); allr.append(d)
+            pr(f"   {m:6s}  {k:9s} {d[0]:8.1f} {d[1]:8.1f} {d[2]:8.1f}")
+        rr = np.array(rr)
+        pr(f"   {m:6s}  RMS       {np.sqrt((rr[:,0]**2).mean()):8.1f} {np.sqrt((rr[:,1]**2).mean()):8.1f}"
+           f" {np.sqrt((rr[:,2]**2).mean()):8.1f}")
+    allr = np.array(allr)
+    pr(f"   all     RMS       {np.sqrt((allr[:,0]**2).mean()):8.1f} {np.sqrt((allr[:,1]**2).mean()):8.1f}"
+       f" {np.sqrt((allr[:,2]**2).mean()):8.1f}")
 
     text = "\n".join(out) + "\n"
     print(text)
