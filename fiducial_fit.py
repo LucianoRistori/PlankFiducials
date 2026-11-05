@@ -18,9 +18,10 @@ Step 1: for each module, identify which fiducial was actually measured in each
         group (LL 1-16, LR/UR 1-18, UL 1-16) by a 2D rigid fit over all label
         combinations, then fit a 3D rigid transform nominal -> measured and
         compute the 3D positions of the 4 circles.
-Step 2: global "mean" system: Z normal to the best-fit plane through all circles
-        of all modules, X along the average local x axis of the modules,
-        origin at ORG (if present) or at the circle centroid.
+Step 2: global "mean" system: its axes are the mean orientation of the modules
+        (X, Y, Z = average local x, y and normal of the modules, made exactly
+        orthogonal); origin at ORG (if present) or at the centroid of the
+        circles. See README, "The global reference system", for the reasons.
 Step 3: transform circles and module poses to the mean system.
 
 Output: the report is printed and written to <measurement>_report.txt in the
@@ -154,15 +155,16 @@ def main():
     goodm = mods          # all modules enter the global system; flags are informational
 
     # ---------------- Step 2 ----------------
+    # Orientation of the global system = mean orientation of the modules:
+    # the rotation closest (least squares) to all module rotations R_m,
+    # i.e. the orthogonal part of sum(R_m)  (X, Y, Z = mean local x, y, normal).
     P = np.array([M[m]['circ'][c] for m in goodm for c in CIRCLES])
     cen = P.mean(0)
-    n = np.linalg.svd(P - cen)[2][2]
-    if n[2] < 0:
-        n = -n
-    xs = np.array([M[m]['R'][:, 0] for m in goodm])
-    xs = xs - np.outer(xs @ n, n)
-    X = xs.mean(0); X /= np.linalg.norm(X)
-    Y = np.cross(n, X)
+    U, S, Vt = np.linalg.svd(sum(M[m]['R'] for m in goodm))
+    Rmean = U @ np.diag([1, 1, np.sign(np.linalg.det(U @ Vt))]) @ Vt
+    X, Y, n = Rmean[:, 0], Rmean[:, 1], Rmean[:, 2]
+    if n[2] < 0:                       # keep Z pointing up in measurement coordinates
+        X, Y, n = X, -Y, -n
     G = np.vstack([X, Y, n])          # rows = global axes in measurement coords
     O = org if org is not None else cen
     to_g = lambda p: G @ (p - O)
@@ -173,9 +175,12 @@ def main():
        f"  ({O[0]:.4f}, {O[1]:.4f}, {O[2]:.4f})")
     for lab, v in zip('XYZ', G):
         pr(f"   {lab} axis       : ({v[0]: .6f}, {v[1]: .6f}, {v[2]: .6f})")
-    rz = np.arctan2(X[1], X[0]); tilt = np.arccos(n[2])
-    pr(f"   rotation of X about measurement z: {rz*1000:.3f} mrad;  plane tilt: {tilt*1000:.3f} mrad")
-    pr(f"   circle RMS distance from plane: {np.sqrt(((P-cen)@n)**2).mean()*1000:.1f} um")
+    rz = np.arctan2(X[1], X[0]); tilt = np.arccos(np.clip(n[2], -1, 1))
+    pr(f"   rotation of X about measurement z: {rz*1000:.3f} mrad;  tilt of Z from measurement z: {tilt*1000:.3f} mrad")
+    spread = [np.arccos(np.clip((np.trace(Rmean.T @ M[m]['R']) - 1) / 2, -1, 1)) for m in goodm]
+    pr(f"   RMS angle of the modules from the mean orientation: {np.sqrt(np.mean(np.square(spread)))*1000:.3f} mrad")
+    pr(f"   circle RMS distance from the global XY plane through the centroid: "
+       f"{np.sqrt((((P-cen)@n)**2).mean())*1000:.1f} um")
 
     # ---------------- Step 3 ----------------
     pr("\nSTEP 3 - results in the global mean system (mm, angles in mrad)")
